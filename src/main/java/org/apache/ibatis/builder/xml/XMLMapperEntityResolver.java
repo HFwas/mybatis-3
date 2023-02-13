@@ -15,20 +15,22 @@
  */
 package org.apache.ibatis.builder.xml;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.util.Locale;
-
 import org.apache.ibatis.io.Resources;
 import org.xml.sax.EntityResolver;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.Locale;
 
 /**
  * Offline entity resolver for the MyBatis DTDs.
  *
  * @author Clinton Begin
  * @author Eduardo Macarron
+ *
+ * 自定义了EntityResolver的实现，避免联网下载xml文件头部的xsd或者dtd文件来进行校验
  */
 public class XMLMapperEntityResolver implements EntityResolver {
 
@@ -73,8 +75,10 @@ public class XMLMapperEntityResolver implements EntityResolver {
     InputSource source = null;
     if (path != null) {
       try {
+        // 获取InputSource对象
         InputStream in = Resources.getResourceAsStream(path);
         source = new InputSource(in);
+        // 设置pubicid,systemid两个参数
         source.setPublicId(publicId);
         source.setSystemId(systemId);
       } catch (IOException e) {

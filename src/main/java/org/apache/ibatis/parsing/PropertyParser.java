@@ -20,6 +20,8 @@ import java.util.Properties;
 /**
  * @author Clinton Begin
  * @author Kazuki Shimizu
+ * 动态属性解析器，
+ *
  */
 public class PropertyParser {
 
@@ -51,8 +53,11 @@ public class PropertyParser {
   }
 
   public static String parse(String string, Properties variables) {
+    // 1、创建VariableTokenHandler执行器
     VariableTokenHandler handler = new VariableTokenHandler(variables);
+    // 2、创建GenericTokenParser解析器
     GenericTokenParser parser = new GenericTokenParser("${", "}", handler);
+    // 3、解析
     return parser.parse(string);
   }
 
