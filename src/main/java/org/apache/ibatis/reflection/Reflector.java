@@ -15,35 +15,17 @@
  */
 package org.apache.ibatis.reflection;
 
+import org.apache.ibatis.reflection.invoker.*;
+import org.apache.ibatis.reflection.property.PropertyNamer;
+import org.apache.ibatis.util.MapUtil;
+
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
-import java.lang.reflect.Array;
-import java.lang.reflect.Constructor;
-import java.lang.reflect.Field;
-import java.lang.reflect.GenericArrayType;
-import java.lang.reflect.Method;
-import java.lang.reflect.Modifier;
-import java.lang.reflect.ParameterizedType;
-import java.lang.reflect.ReflectPermission;
-import java.lang.reflect.Type;
+import java.lang.reflect.*;
 import java.text.MessageFormat;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
+import java.util.*;
 import java.util.Map.Entry;
-
-import org.apache.ibatis.reflection.invoker.AmbiguousMethodInvoker;
-import org.apache.ibatis.reflection.invoker.GetFieldInvoker;
-import org.apache.ibatis.reflection.invoker.Invoker;
-import org.apache.ibatis.reflection.invoker.MethodInvoker;
-import org.apache.ibatis.reflection.invoker.SetFieldInvoker;
-import org.apache.ibatis.reflection.property.PropertyNamer;
-import org.apache.ibatis.util.MapUtil;
 
 /**
  * This class represents a cached set of class definition information that
@@ -54,28 +36,45 @@ import org.apache.ibatis.util.MapUtil;
 public class Reflector {
 
   private static final MethodHandle isRecordMethodHandle = getIsRecordMethodHandle();
+  // 对应的类
   private final Class<?> type;
+  // 可读的属性数组
   private final String[] readablePropertyNames;
+  // 可写的属性数组
   private final String[] writablePropertyNames;
+  // set方法集合，方法名称-》对应的执行类
   private final Map<String, Invoker> setMethods = new HashMap<>();
+  // get方法集合，方法名称-》对应的执行类
   private final Map<String, Invoker> getMethods = new HashMap<>();
+  // setting属性对应的返回值的类型集合
   private final Map<String, Class<?>> setTypes = new HashMap<>();
+  // getting属性对应的返回值的类型集合
   private final Map<String, Class<?>> getTypes = new HashMap<>();
+  // 默认的构造器
   private Constructor<?> defaultConstructor;
 
+  // 不区分大小写的属性集合
   private Map<String, String> caseInsensitivePropertyMap = new HashMap<>();
 
   public Reflector(Class<?> clazz) {
+    // 设置对应的类 class org.apache.ibatis.reflection.ReflectorTest$Section
     type = clazz;
+    // 1、添加默认的构造方法
     addDefaultConstructor(clazz);
+    // 获取类的所有方法，接口，父类的方法，类上的方法
     Method[] classMethods = getClassMethods(clazz);
     if (isRecord(type)) {
+      // 添加默认的无参构造方法
       addRecordGetMethods(classMethods);
     } else {
+      // 添加getting方法
       addGetMethods(classMethods);
+      // 添加setting方法
       addSetMethods(classMethods);
+      // 添加
       addFields(clazz);
     }
+    //初始化 readablePropertyNames、writeablePropertyNames、caseInsensitivePropertyMap 属性
     readablePropertyNames = getMethods.keySet().toArray(new String[0]);
     writablePropertyNames = setMethods.keySet().toArray(new String[0]);
     for (String propName : readablePropertyNames) {
@@ -235,6 +234,11 @@ public class Reflector {
     return result;
   }
 
+  /**
+   * 通过类的fields属性初始化setMethods，getMethods，setTypes，getTypes
+   * 初始化 getMethods + getTypes 和 setMethods + setTypes ，通过遍历 fields 属性。
+   * @param clazz
+   */
   private void addFields(Class<?> clazz) {
     Field[] fields = clazz.getDeclaredFields();
     for (Field field : fields) {
@@ -284,15 +288,18 @@ public class Reflector {
    *
    * @param clazz The class
    * @return An array containing all methods in this class
+   * 获取类的的方法
    */
   private Method[] getClassMethods(Class<?> clazz) {
     Map<String, Method> uniqueMethods = new HashMap<>();
     Class<?> currentClass = clazz;
     while (currentClass != null && currentClass != Object.class) {
+      // currentClass.getDeclaredMethods()获取类的所有的构造方法
       addUniqueMethods(uniqueMethods, currentClass.getDeclaredMethods());
 
       // we also need to look for interface methods -
       // because the class may be abstract
+      // 获取当前类的以及父类所有的接口
       Class<?>[] interfaces = currentClass.getInterfaces();
       for (Class<?> anInterface : interfaces) {
         addUniqueMethods(uniqueMethods, anInterface.getMethods());
@@ -308,7 +315,10 @@ public class Reflector {
 
   private void addUniqueMethods(Map<String, Method> uniqueMethods, Method[] methods) {
     for (Method currentMethod : methods) {
+      // 判断方法是否是桥接方法
+      // 桥接方法是 JDK 1.5 引入泛型后，为了使Java的泛型方法生成的字节码和 1.5 版本前的字节码相兼容而实现的。具体作用在于判断方法是否是有编译成在编译阶段自动生成的。
       if (!currentMethod.isBridge()) {
+        // 获取方法的全限定名称#方法名称
         String signature = getSignature(currentMethod);
         // check to see if the method is already known
         // if it is known, then an extended class must have
@@ -320,6 +330,11 @@ public class Reflector {
     }
   }
 
+  /**
+   * 获取方法的签名，
+   * @param method public abstract java.lang.Object org.apache.ibatis.reflection.ReflectorTest$Entity.getId()
+   * @return java.lang.Object#getId 类的全限定名称#方法名称
+   */
   private String getSignature(Method method) {
     StringBuilder sb = new StringBuilder();
     Class<?> returnType = method.getReturnType();
