@@ -42,7 +42,7 @@ import java.util.Properties;
 // 基于 Java XPath 解析器，用于解析 MyBatis mybatis-config.xml 和 **Mapper.xml 等 XML 配置文件
 public class XPathParser {
 
-  // 解析xml文件生成的document对象
+  // 解析xml文件生成的document对象，借助document对文档进行操作
   private final Document document;
   // 是否校验xml,一般情况下，值为true，
   private boolean validation;
