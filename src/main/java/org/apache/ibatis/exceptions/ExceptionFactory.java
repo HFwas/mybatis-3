@@ -26,6 +26,7 @@ public class ExceptionFactory {
     // Prevent Instantiation
   }
 
+  // 转换异常为mybatis自己的业务报错，
   public static RuntimeException wrapException(String message, Exception e) {
     return new PersistenceException(ErrorContext.instance().message(message).cause(e).toString(), e);
   }
