@@ -48,6 +48,7 @@ import java.lang.annotation.Target;
 public @interface Intercepts {
   /**
    * Returns method signatures to intercept.
+   * 方法访问签名
    *
    * @return method signatures
    */

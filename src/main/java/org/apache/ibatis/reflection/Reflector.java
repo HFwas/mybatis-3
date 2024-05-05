@@ -59,7 +59,7 @@ public class Reflector {
   public Reflector(Class<?> clazz) {
     // 设置对应的类 class org.apache.ibatis.reflection.ReflectorTest$Section
     type = clazz;
-    // 1、添加默认的构造方法
+    // 1、添加默认的无参构造方法
     addDefaultConstructor(clazz);
     // 获取类的所有方法，接口，父类的方法，类上的方法
     Method[] classMethods = getClassMethods(clazz);

@@ -28,11 +28,14 @@ import org.apache.ibatis.util.MapUtil;
 
 /**
  * @author Clinton Begin
+ * 插件模块的核心类
  */
 public class Plugin implements InvocationHandler {
 
+  // 实际
   private final Object target;
   private final Interceptor interceptor;
+  // 插件的签名集合
   private final Map<Class<?>, Set<Method>> signatureMap;
 
   private Plugin(Object target, Interceptor interceptor, Map<Class<?>, Set<Method>> signatureMap) {
@@ -42,15 +45,21 @@ public class Plugin implements InvocationHandler {
   }
 
   public static Object wrap(Object target, Interceptor interceptor) {
+    // 1、获取拦截器所有的签名集合
     Map<Class<?>, Set<Method>> signatureMap = getSignatureMap(interceptor);
+    // 2、获取目标对象所属类
     Class<?> type = target.getClass();
+    // 3、获取所有接口
     Class<?>[] interfaces = getAllInterfaces(type, signatureMap);
+    // 3、1 如果有接口的话：
     if (interfaces.length > 0) {
+      // 创建目标对象的jdk proxy 对象
       return Proxy.newProxyInstance(
           type.getClassLoader(),
           interfaces,
           new Plugin(target, interceptor, signatureMap));
     }
+    //3、2  没有则返回原始类
     return target;
   }
 
@@ -68,16 +77,20 @@ public class Plugin implements InvocationHandler {
   }
 
   private static Map<Class<?>, Set<Method>> getSignatureMap(Interceptor interceptor) {
+    // 基于注解Intercepts和Signature获取内容
+    // 获取目标类上的Intercepts注解对象
     Intercepts interceptsAnnotation = interceptor.getClass().getAnnotation(Intercepts.class);
     // issue #251
     if (interceptsAnnotation == null) {
       throw new PluginException("No @Intercepts annotation was found in interceptor " + interceptor.getClass().getName());
     }
+    // 获取注解当中的Signature注解集合
     Signature[] sigs = interceptsAnnotation.value();
     Map<Class<?>, Set<Method>> signatureMap = new HashMap<>();
     for (Signature sig : sigs) {
       Set<Method> methods = MapUtil.computeIfAbsent(signatureMap, sig.type(), k -> new HashSet<>());
       try {
+        // 获取Signature注解当中配置的Method方法
         Method method = sig.type().getMethod(sig.method(), sig.args());
         methods.add(method);
       } catch (NoSuchMethodException e) {
