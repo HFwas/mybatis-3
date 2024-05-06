@@ -42,13 +42,20 @@ public class UnpooledDataSource implements DataSource {
   private Properties driverProperties;
   private static Map<String, Driver> registeredDrivers = new ConcurrentHashMap<>();
 
+  /// 驱动名称
   private String driver;
+  // 链接地址
   private String url;
+  // 用户名
   private String username;
+  // 密码
   private String password;
 
+  // 是否自动提交sql
   private Boolean autoCommit;
+  // 默认的事务隔离级别
   private Integer defaultTransactionIsolationLevel;
+  // 网络链接超时时间设置
   private Integer defaultNetworkTimeout;
 
   static {
@@ -220,14 +227,18 @@ public class UnpooledDataSource implements DataSource {
   }
 
   private Connection doGetConnection(Properties properties) throws SQLException {
+    // 初始化驱动
     initializeDriver();
+    // 获取链接
     Connection connection = DriverManager.getConnection(url, properties);
+    // 配置链接参数：比如：是否自动提交，事务隔离级别等
     configureConnection(connection);
     return connection;
   }
 
   private synchronized void initializeDriver() throws SQLException {
     if (!registeredDrivers.containsKey(driver)) {
+      // 获取驱动对应的实体类
       Class<?> driverType;
       try {
         if (driverClassLoader != null) {
@@ -239,6 +250,7 @@ public class UnpooledDataSource implements DataSource {
         // http://www.kfu.com/~nsayer/Java/dyn-jdbc.html
         Driver driverInstance = (Driver) driverType.getDeclaredConstructor().newInstance();
         DriverManager.registerDriver(new DriverProxy(driverInstance));
+        // 将本次获取的驱动加入到缓存当中
         registeredDrivers.put(driver, driverInstance);
       } catch (Exception e) {
         throw new SQLException("Error setting driver on UnpooledDataSource. Cause: " + e);
@@ -247,12 +259,15 @@ public class UnpooledDataSource implements DataSource {
   }
 
   private void configureConnection(Connection conn) throws SQLException {
+    // 默认的网络超时时间
     if (defaultNetworkTimeout != null) {
       conn.setNetworkTimeout(Executors.newSingleThreadExecutor(), defaultNetworkTimeout);
     }
+    // 设置是否自动提交
     if (autoCommit != null && autoCommit != conn.getAutoCommit()) {
       conn.setAutoCommit(autoCommit);
     }
+    // 设置默认的事务隔离级别
     if (defaultTransactionIsolationLevel != null) {
       conn.setTransactionIsolation(defaultTransactionIsolationLevel);
     }
