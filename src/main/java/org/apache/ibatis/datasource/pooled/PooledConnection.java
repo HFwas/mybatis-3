@@ -32,13 +32,21 @@ class PooledConnection implements InvocationHandler {
   private static final Class<?>[] IFACES = new Class<?>[] { Connection.class };
 
   private final int hashCode;
+  // 记录当前链接所在的数据源对象，本地链接时由这个数据源创建出来的，链接回收也是回到这个数据源
   private final PooledDataSource dataSource;
+  // 真正的链接对象
   private final Connection realConnection;
+  // 链接的代理对象
   private final Connection proxyConnection;
+  // 从数据源取出来链接的时间错
   private long checkoutTimestamp;
+  // 链接创建的时间
   private long createdTimestamp;
+  // 链接最后使用的时间
   private long lastUsedTimestamp;
+  // 根据数据库url、用户名、密码生成一个hash值，唯一标识一个连接池
   private int connectionTypeCode;
+  // 链接是否有效
   private boolean valid;
 
   /**
@@ -242,11 +250,13 @@ class PooledConnection implements InvocationHandler {
   @Override
   public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
     String methodName = method.getName();
+    // 针对clos()方法进行替换，链接关闭实际上时吧链接归还到链接池
     if (CLOSE.equals(methodName)) {
       dataSource.pushConnection(this);
       return null;
     }
     try {
+      // 针对其他方法，不做特殊处理
       if (!Object.class.equals(method.getDeclaringClass())) {
         // issue #579 toString() should never fail
         // throw an SQLException instead of a Runtime

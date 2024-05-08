@@ -420,15 +420,23 @@ public class PooledDataSource implements DataSource {
   }
 
   private PooledConnection popConnection(String username, String password) throws SQLException {
+    // 获取链接时，是否进行了等待
     boolean countedWait = false;
+    // 真正的链接对象
     PooledConnection conn = null;
+    // 当前时间
     long t = System.currentTimeMillis();
+    // 本地坏连接数
     int localBadConnectionCount = 0;
 
+    // 如果没有获取到链接，则循环获取
     while (conn == null) {
+      // 判断池状态
       synchronized (state) {
+        // 如果空闲链接不为空的话
         if (!state.idleConnections.isEmpty()) {
           // Pool has available connection
+          //
           conn = state.idleConnections.remove(0);
           if (log.isDebugEnabled()) {
             log.debug("Checked out connection " + conn.getRealHashCode() + " from pool.");

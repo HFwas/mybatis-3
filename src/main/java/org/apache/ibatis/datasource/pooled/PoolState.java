@@ -23,17 +23,27 @@ import java.util.List;
  */
 public class PoolState {
 
+  // 池化的数据源对象
   protected PooledDataSource dataSource;
 
+  // 链接吃的空闲链接集合
   protected final List<PooledConnection> idleConnections = new ArrayList<>();
+  // 链接池当中活跃的链接对象
   protected final List<PooledConnection> activeConnections = new ArrayList<>();
+  // 请求次数
   protected long requestCount = 0;
+  // 累计请求时间
   protected long accumulatedRequestTime = 0;
+  // 从链接池获取链接，是checkout,到归还链接。累计的链接使用时间
   protected long accumulatedCheckoutTime = 0;
+  //
   protected long claimedOverdueConnectionCount = 0;
   protected long accumulatedCheckoutTimeOfOverdueConnections = 0;
+  // 累计等待时间
   protected long accumulatedWaitTime = 0;
+  // 等待次数
   protected long hadToWaitCount = 0;
+  // 坏链接次数
   protected long badConnectionCount = 0;
 
   public PoolState(PooledDataSource dataSource) {
